@@ -1,0 +1,1735 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DC/TLC Schritt für Schritt</title>
+  <style>
+    :root {
+      --ink: #1e2933;
+      --muted: #5f6b7a;
+      --line: #d7dee8;
+      --paper: #fbfcf8;
+      --panel: #ffffff;
+      --blue: #1f6f9f;
+      --green: #2f7d55;
+      --amber: #b36b18;
+      --red: #b64a4a;
+      --violet: #6f5aa8;
+      --shadow: 0 14px 36px rgba(30, 41, 51, .10);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(31, 111, 159, .06) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(47, 125, 85, .055) 1px, transparent 1px),
+        var(--paper);
+      background-size: 28px 28px;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.48;
+    }
+
+    button, input, select { font: inherit; }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 18px;
+      background: #f2f8f5;
+      border-right: 1px solid var(--line);
+      overflow-y: auto;
+    }
+
+    .brand {
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand h1 {
+      margin: 0 0 6px;
+      font-size: 1.18rem;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .step-list {
+      display: grid;
+      gap: 7px;
+      margin-top: 16px;
+    }
+
+    .step-tab {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 9px;
+      align-items: center;
+      width: 100%;
+      min-height: 43px;
+      padding: 8px 10px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .step-tab:hover,
+    .step-tab.active {
+      background: #fff;
+      border-color: var(--line);
+      box-shadow: 0 2px 10px rgba(30, 41, 51, .06);
+    }
+
+    .step-tab.done .num {
+      background: var(--green);
+      color: #fff;
+    }
+
+    .num {
+      display: inline-grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #e5ecf3;
+      color: #354252;
+      font-weight: 700;
+      font-size: .84rem;
+    }
+
+    .meter-box {
+      margin-top: 18px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .meter {
+      height: 10px;
+      margin-top: 8px;
+      background: #e7edf3;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      transition: width .25s ease;
+    }
+
+    main {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 26px;
+    }
+
+    .step {
+      display: none;
+      animation: fade .18s ease;
+    }
+
+    .step.active { display: block; }
+
+    @keyframes fade {
+      from { opacity: .4; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .topline {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #eef3f7;
+      color: #354252;
+      font-weight: 700;
+      font-size: .84rem;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: clamp(1.7rem, 3vw, 2.8rem);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 12px; }
+
+    .lead {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 76ch;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 4px 14px rgba(30, 41, 51, .05);
+    }
+
+    .note {
+      padding: 12px 14px;
+      border-left: 4px solid var(--blue);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      background: #eef7fb;
+      color: #294c5c;
+    }
+
+    .task {
+      border-color: #d3c3e3;
+      background: #fbf8ff;
+    }
+
+    .task h3::before { content: "Aufgabe: "; color: var(--violet); }
+
+    .list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .list li {
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn.good {
+      border-color: var(--green);
+      background: var(--green);
+      color: #fff;
+    }
+
+    .btn.choice {
+      justify-content: flex-start;
+      width: 100%;
+      text-align: left;
+      margin-top: 8px;
+    }
+
+    .btn.correct { border-color: var(--green); background: #edf8f1; }
+    .btn.wrong { border-color: var(--red); background: #fff0f0; }
+
+    .feedback {
+      min-height: 32px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    input[type="number"], select {
+      min-height: 40px;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .result {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #d8c8e6;
+      border-radius: var(--radius);
+      background: #f8f2ff;
+      font-weight: 700;
+    }
+
+    .plate-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 330px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #eef6f3, #fff);
+      overflow: hidden;
+    }
+
+    svg { max-width: 100%; height: auto; }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .table th,
+    .table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table th { background: #f0f5f4; }
+    .table tr:last-child td { border-bottom: 0; }
+
+    .mini-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .dropzone {
+      min-height: 58px;
+      padding: 8px;
+      border: 2px dashed #b8c3cf;
+      border-radius: var(--radius);
+      background: #fafafa;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sort-board {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .sort-target {
+      min-height: 180px;
+      padding: 10px;
+      border: 2px dashed #b8c3cf;
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .sort-target h4 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .chip {
+      padding: 9px 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chip.used { opacity: .55; }
+
+    .sort-chip {
+      display: block;
+      width: 100%;
+      margin: 6px 0;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .sort-chip.good { border-color: var(--green); background: #edf8f1; }
+    .sort-chip.bad { border-color: var(--red); background: #fff0f0; }
+
+    .image-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .label-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .label-item {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .label-item strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .label-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .label-chip {
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .label-chip.active {
+      border-color: var(--blue);
+      outline: 3px solid rgba(31, 111, 159, .18);
+    }
+
+    .label-chip.used {
+      opacity: .45;
+    }
+
+    .label-drop {
+      min-height: 42px;
+      margin-top: 6px;
+      padding: 8px;
+      border: 2px dashed #b8c3cf;
+      border-radius: var(--radius);
+      background: #fafafa;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .label-drop.filled {
+      border-style: solid;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .label-drop.good { border-color: var(--green); background: #edf8f1; }
+    .label-drop.bad { border-color: var(--red); background: #fff0f0; }
+
+    .fault-trainer {
+      display: grid;
+      grid-template-columns: minmax(220px, .75fr) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .case-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .case-btn {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .case-btn.active {
+      border-color: var(--blue);
+      background: #eef7fb;
+      font-weight: 700;
+    }
+
+    .fault-visual {
+      display: grid;
+      place-items: center;
+      min-height: 210px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #f8fbfa;
+      margin-bottom: 12px;
+    }
+
+    .fault-visual svg {
+      max-height: 210px;
+    }
+
+    .flash-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .flash-card {
+      min-height: 90px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .flash-card .back { display: none; color: var(--muted); }
+    .flash-card.open .front { display: none; }
+    .flash-card.open .back { display: block; }
+
+    .visual-flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .process-card {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      min-height: 210px;
+    }
+
+    .process-card svg {
+      display: block;
+      width: 100%;
+      height: 118px;
+      margin-bottom: 8px;
+      border-radius: var(--radius);
+      background: #f7fbfa;
+      border: 1px solid #e2e8ef;
+    }
+
+    .process-card strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .process-card p {
+      color: var(--muted);
+      font-size: .9rem;
+      margin: 0;
+    }
+
+    .exam-card {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .exam-layout {
+      display: grid;
+      grid-template-columns: minmax(260px, .8fr) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .exam-image {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      max-height: 360px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .answer-box {
+      width: 100%;
+      min-height: 86px;
+      resize: vertical;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    details.solution {
+      border: 1px solid #d8c8e6;
+      border-radius: var(--radius);
+      background: #fbf8ff;
+      overflow: hidden;
+    }
+
+    details.solution summary {
+      padding: 10px 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    details.solution div {
+      padding: 0 12px 12px;
+      color: var(--muted);
+    }
+
+    .summary-box {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .checkline {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .checkline input {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+    }
+
+    @media (max-width: 920px) {
+      .shell { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .step-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      main { padding: 18px; }
+      .grid, .grid.three, .mini-row, .sort-board, .label-grid, .flash-grid, .visual-flow, .exam-layout, .fault-trainer { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      aside, .buttons, .btn { display: none !important; }
+      body { background: #fff; }
+      .shell, main { display: block; max-width: none; padding: 0; }
+      .step { display: block !important; break-after: page; }
+      .card { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <h1>DC/TLC Schritt für Schritt</h1>
+        <p>Geführtes Selbstlernmaterial zur Dünnschichtchromatographie</p>
+      </div>
+      <nav class="step-list" aria-label="Lernschritte">
+        <button class="step-tab active" data-step="0"><span class="num">1</span><span>Worum geht es?</span></button>
+        <button class="step-tab" data-step="1"><span class="num">2</span><span>Aufbau</span></button>
+        <button class="step-tab" data-step="2"><span class="num">3</span><span>Prinzip</span></button>
+        <button class="step-tab" data-step="3"><span class="num">4</span><span>Durchführung</span></button>
+        <button class="step-tab" data-step="4"><span class="num">5</span><span>Laufmittel</span></button>
+        <button class="step-tab" data-step="5"><span class="num">6</span><span>Rf-Wert</span></button>
+        <button class="step-tab" data-step="6"><span class="num">7</span><span>Detektion</span></button>
+        <button class="step-tab" data-step="7"><span class="num">8</span><span>Chromatogramm</span></button>
+        <button class="step-tab" data-step="8"><span class="num">9</span><span>Störungen</span></button>
+        <button class="step-tab" data-step="9"><span class="num">10</span><span>HPTLC</span></button>
+        <button class="step-tab" data-step="10"><span class="num">11</span><span>Abschluss</span></button>
+      </nav>
+      <div class="meter-box">
+        <div class="meter-label"><span>Fortschritt</span><strong id="progressText">9 %</strong></div>
+        <div class="meter"><span id="progressBar"></span></div>
+      </div>
+    </aside>
+
+    <main>
+      <section class="step active">
+        <div class="topline"><span class="badge">Schritt 1 von 11</span><span class="badge">Orientierung</span></div>
+        <h2>Worum geht es bei der Dünnschichtchromatographie?</h2>
+        <p class="lead">Die Dünnschichtchromatographie, kurz DC, heißt auf Englisch TLC = thin layer chromatography. Sie ist ein physikalisch-chemisches Trennverfahren und wird zur Untersuchung der Zusammensetzung von Proben genutzt.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>Einsatzgebiete</h3>
+            <p>Besonders im präparativ-organischen Bereich nutzt man die DC, weil sie schnell, unkompliziert und materialsparend ist.</p>
+            <ul class="list">
+              <li>schnelle Verlaufskontrolle bei der Synthese</li>
+              <li>Reinheitskontrolle von Edukten, Zwischenprodukten oder Produkten</li>
+              <li>Vergleich einer Probe mit Referenzsubstanzen</li>
+            </ul>
+          </div>
+          <div class="plate-wrap">
+            <svg viewBox="0 0 410 320" aria-label="DC-Platte in Entwicklungskammer">
+              <rect x="35" y="20" width="340" height="270" rx="8" fill="#e9f1f5" stroke="#9fb2bf" stroke-width="3"/>
+              <rect x="95" y="34" width="220" height="238" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/>
+              <rect x="52" y="245" width="306" height="28" fill="#c8e8ef"/>
+              <line x1="112" y1="225" x2="298" y2="225" stroke="#52606d" stroke-dasharray="6 5" stroke-width="2"/>
+              <line x1="112" y1="70" x2="298" y2="70" stroke="#1f6f9f" stroke-width="3"/>
+              <circle cx="150" cy="150" r="13" fill="#e2a03f"/>
+              <circle cx="205" cy="112" r="11" fill="#6f5aa8"/>
+              <circle cx="260" cy="185" r="12" fill="#2f7d55"/>
+              <circle cx="150" cy="225" r="4" fill="#1e2933"/>
+              <circle cx="205" cy="225" r="4" fill="#1e2933"/>
+              <circle cx="260" cy="225" r="4" fill="#1e2933"/>
+              <text x="112" y="61" font-size="14" fill="#1f6f9f">Laufmittelfront</text>
+              <text x="112" y="243" font-size="14" fill="#52606d">Startlinie</text>
+            </svg>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h3>Warum ist DC praktisch?</h3>
+            <p>Man braucht nur wenig Probe, wenig Laufmittel und einfache Geräte. Mehrere Proben können gleichzeitig auf derselben Platte laufen.</p>
+            <p>Die Methode ist deshalb gut für schnelle Entscheidungen im Labor: Ist noch Edukt vorhanden? Ist ein Produkt entstanden? Gibt es auffällige Verunreinigungen?</p>
+          </div>
+          <div class="card">
+            <h3>Wo sind Grenzen?</h3>
+            <p>DC ist meist eher qualitativ als quantitativ. Bei sehr komplexen Gemischen reicht die Trennleistung oft nicht aus. Außerdem sind Rf-Werte empfindlich gegenüber Bedingungen wie Laufmittel, Temperatur, Kammersättigung und Plattenzustand.</p>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>Vor- und Nachteile zuordnen</h3>
+          <p>Klicke eine Aussage an und ordne sie dann „Vorteil“ oder „Nachteil“ zu. Du kannst falsch abgelegte Karten erneut anklicken und umsortieren.</p>
+          <div id="prosConsBank" class="dropzone"></div>
+          <div class="sort-board">
+            <div class="sort-target" data-zone="pro"><h4>Vorteile</h4></div>
+            <div class="sort-target" data-zone="con"><h4>Nachteile</h4></div>
+          </div>
+          <button class="btn good" id="checkProsCons">Zuordnung prüfen</button>
+          <div id="prosConsFeedback" class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn primary next">Weiter zu Schritt 2</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 2 von 11</span><span class="badge">Aufbau</span></div>
+        <h2>Aus welchen Teilen besteht eine DC?</h2>
+        <p class="lead">Die wichtigsten Begriffe sind mobile Phase, stationäre Phase und Analyt. Zusätzlich bestimmen Entwicklungskammer, Trägerplatte, Startlinie und Laufmittelhöhe die Qualität der Trennung.</p>
+        <div class="grid three">
+          <div class="card">
+            <h3>Stationäre Phase</h3>
+            <p>Die ruhende Trennschicht auf der Platte. Sie besteht aus einem feinkörnigen Material, zum Beispiel Kieselgel, Aluminiumoxid oder Cellulose.</p>
+            <p>Meist wird Kieselgel verwendet. Seine OH-Gruppen machen die Oberfläche polar. Das ist typisch für die Normalphasen-DC.</p>
+          </div>
+          <div class="card">
+            <h3>Mobile Phase</h3>
+            <p>Die bewegte Phase. Bei der DC ist das eine Flüssigkeit oder ein Flüssigkeitsgemisch. Man nennt sie Fließmittel, Laufmittel oder Elutionsmittel.</p>
+            <p>Wichtig sind die eluotrope Reihe, Polarität und Mischbarkeit der verwendeten Lösemittel.</p>
+          </div>
+          <div class="card">
+            <h3>Analyt</h3>
+            <p>Der zu untersuchende Stoff oder die Stoffmischung. Die Analyt-Teilchen wechselwirken unterschiedlich stark mit stationärer und mobiler Phase.</p>
+            <p>Diese unterschiedlichen Wechselwirkungen erzeugen die Trennung.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Wichtige Fakten zur Entwicklungskammer</h3>
+          <ul class="list">
+            <li>Die Entwicklungskammer ist häufig mit Filterpapier ausgekleidet.</li>
+            <li>Grund dafür ist die Kammersättigung: Die Dämpfe des Fließmittels verteilen sich gleichmäßig in der Kammer.</li>
+            <li>Dadurch werden Verdunstungseffekte verringert. Die Ergebnisse werden reproduzierbarer und die Laufmittelfront wird gleichmäßiger.</li>
+            <li>Die Fließmittelhöhe beträgt ungefähr 5 bis 10 mm.</li>
+          </ul>
+        </div>
+        <div class="card task">
+          <h3>Bildbeschriftung richtig zuordnen</h3>
+          <p>Klicke zuerst eine Begriffskarte an und danach die passende Position. Falsch gesetzte Begriffe kannst du durch erneutes Anklicken einer Position ersetzen.</p>
+          <div class="grid">
+            <div class="image-card">
+              <img src="assets/dc-kammer-unbeschriftet.png" alt="Schematische DC-Kammer ohne Beschriftung">
+              <p class="note" style="margin-top:10px">Für die Übung sind die Positionen von oben nach unten gedacht: erst die obere linke Beschriftung, dann die rechte Seite von oben nach unten, zuletzt die unteren Beschriftungen.</p>
+            </div>
+            <div>
+              <div class="label-bank" id="labelBank" aria-label="Begriffskarten zur Bildbeschriftung"></div>
+              <div class="label-grid" id="labelGrid">
+                <div class="label-item"><strong>Position 1</strong><div class="label-drop" data-label="Papier zur Kammersättigung">Begriff einsetzen</div></div>
+                <div class="label-item"><strong>Position 2</strong><div class="label-drop" data-label="Deckel">Begriff einsetzen</div></div>
+                <div class="label-item"><strong>Position 3</strong><div class="label-drop" data-label="Trägerplatte">Begriff einsetzen</div></div>
+                <div class="label-item"><strong>Position 4</strong><div class="label-drop" data-label="Trennschicht auf Träger">Begriff einsetzen</div></div>
+                <div class="label-item"><strong>Position 5</strong><div class="label-drop" data-label="DC-Kammer">Begriff einsetzen</div></div>
+                <div class="label-item"><strong>Position 6</strong><div class="label-drop" data-label="Startlinie">Begriff einsetzen</div></div>
+                <div class="label-item"><strong>Position 7</strong><div class="label-drop" data-label="Substanzflecken">Begriff einsetzen</div></div>
+                <div class="label-item"><strong>Position 8</strong><div class="label-drop" data-label="Fließmittel / Laufmittel">Begriff einsetzen</div></div>
+              </div>
+              <button class="btn good" id="checkLabels" style="margin-top:10px">Beschriftung prüfen</button>
+              <button class="btn" id="resetLabels" style="margin-top:10px">Zurücksetzen</button>
+              <div id="labelFeedback" class="feedback"></div>
+            </div>
+          </div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 3</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 3 von 11</span><span class="badge">Trennprinzip</span></div>
+        <h2>Warum wandern Stoffe unterschiedlich weit?</h2>
+        <p class="lead">Jeder Stoff verteilt sich zwischen stationärer und mobiler Phase. Wer stärker an der stationären Phase haftet, bleibt länger zurück und hat einen kleineren Rf-Wert.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>Normalphasen-DC</h3>
+            <p>Bei einer polaren stationären Phase wie Kieselgel werden polare Stoffe stärker festgehalten. Weniger polare Stoffe wandern weiter.</p>
+            <p class="note">Merksatz: Polar hält polar fest. Auf Kieselgel läuft unpolar meistens weiter.</p>
+          </div>
+          <div class="card">
+            <h3>Umkehrphasen-DC</h3>
+            <p>Bei RP-18 ist die Oberfläche unpolar. Dadurch kehrt sich die typische Reihenfolge oft um: polarere Stoffe werden weniger stark festgehalten.</p>
+          </div>
+        </div>
+        <div class="card image-card">
+          <h3>Normalphase und Reversed Phase im Vergleich</h3>
+          <img src="assets/normalphase-rp.png" alt="Vergleich von Normalphase mit polarer Kieselgeloberfläche und Reversed Phase mit unpolaren Alkylketten">
+          <p style="margin-top:12px">Links ist unmodifiziertes Kieselgel mit polaren OH-Gruppen dargestellt. Rechts ist die Oberfläche silanisiert, zum Beispiel mit langen Alkylketten. Dadurch wird die stationäre Phase apolar und hydrophob.</p>
+        </div>
+        <div class="card">
+          <h3>Wechselwirkungen fachlich genauer</h3>
+          <p>Bei Kieselgel spielen Adsorption, Dipol-Dipol-Wechselwirkungen und Wasserstoffbrücken eine wichtige Rolle. Je größer die Oberfläche der stationären Phase ist, desto mehr Kontaktstellen gibt es zwischen Analyt und Trennschicht.</p>
+          <p>Kleine Partikel und eine enge Korngrößenverteilung verbessern die Trennleistung, weil die Laufwege gleichmäßiger und die Austauschprozesse häufiger werden.</p>
+          <div class="flash-grid">
+            <button class="flash-card"><span class="front"><strong>Elution</strong><br>Zum Aufdecken klicken</span><span class="back">Elution bedeutet, dass Analyt-Teilchen durch die mobile Phase von der stationären Phase verdrängt und mitgenommen werden.</span></button>
+            <button class="flash-card"><span class="front"><strong>Elutionskraft</strong><br>Zum Aufdecken klicken</span><span class="back">Hohe Elutionskraft: Das Laufmittel verdrängt Analyt-Teilchen gut von der stationären Phase. Die Rf-Werte steigen meist.</span></button>
+            <button class="flash-card"><span class="front"><strong>Normalphase</strong><br>Zum Aufdecken klicken</span><span class="back">Stationäre Phase polar, mobile Phase eher unpolar bis mittelpolar. Unpolare Stoffe wandern meist weiter.</span></button>
+            <button class="flash-card"><span class="front"><strong>Umkehrphase</strong><br>Zum Aufdecken klicken</span><span class="back">Stationäre Phase unpolar, z. B. RP-18. Polarere Stoffe werden häufig weniger stark zurückgehalten.</span></button>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>Entscheiden</h3>
+          <p>Auf Kieselgel laufen drei Stoffe. C ist am weitesten gewandert, A am wenigsten. Wer ist vermutlich am polarsten?</p>
+          <button class="btn choice" data-answer="ok">A</button>
+          <button class="btn choice" data-answer="no">B</button>
+          <button class="btn choice" data-answer="no">C</button>
+          <div class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 4</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 4 von 11</span><span class="badge">Durchführung</span></div>
+        <h2>Wie führt man eine DC sauber durch?</h2>
+        <p class="lead">Der Ablauf ist immer ähnlich. Wichtig sind kleine Startzonen, eine geschlossene Kammer und das sofortige Markieren der Laufmittelfront.</p>
+        <div class="card">
+          <h3>Ablauf als Laborfolge</h3>
+          <div class="visual-flow">
+            <div class="process-card">
+              <svg viewBox="0 0 180 120" aria-label="Kammer vorbereiten">
+                <rect x="28" y="18" width="124" height="88" rx="4" fill="#eaf2f6" stroke="#8fa5b5" stroke-width="2"/>
+                <rect x="42" y="82" width="96" height="13" fill="#c8e8ef"/>
+                <path d="M48 22 v76" stroke="#b7c0c7" stroke-width="5"/>
+                <text x="58" y="77" font-size="12" fill="#31515e">5-10 mm</text>
+              </svg>
+              <strong>1. Kammer vorbereiten</strong>
+              <p>Laufmittel einfüllen, Filterpapier einsetzen und Kammer sättigen.</p>
+            </div>
+            <div class="process-card">
+              <svg viewBox="0 0 180 120" aria-label="Startlinie zeichnen">
+                <rect x="58" y="12" width="64" height="96" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/>
+                <line x1="66" y1="85" x2="114" y2="85" stroke="#52606d" stroke-dasharray="5 4" stroke-width="2"/>
+                <path d="M126 82 l20 15" stroke="#1e2933" stroke-width="3"/>
+                <polygon points="146,97 137,94 143,89" fill="#1e2933"/>
+                <text x="38" y="88" font-size="12" fill="#52606d">Bleistift</text>
+              </svg>
+              <strong>2. Startlinie markieren</strong>
+              <p>Nur mit Bleistift, ggf. gestrichelt, etwas über dem späteren Laufmittelspiegel.</p>
+            </div>
+            <div class="process-card">
+              <svg viewBox="0 0 180 120" aria-label="Probe auftragen">
+                <rect x="58" y="12" width="64" height="96" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/>
+                <line x1="66" y1="85" x2="114" y2="85" stroke="#52606d" stroke-dasharray="5 4" stroke-width="2"/>
+                <circle cx="78" cy="85" r="3.5" fill="#6f5aa8"/>
+                <circle cx="92" cy="85" r="3.5" fill="#2f7d55"/>
+                <circle cx="106" cy="85" r="3.5" fill="#e2a03f"/>
+                <path d="M132 16 L96 78" stroke="#1e2933" stroke-width="3"/>
+                <circle cx="96" cy="78" r="3" fill="#1e2933"/>
+              </svg>
+              <strong>3. Probe auftragen</strong>
+              <p>Kleine Startzone: höchstens etwa 3 mm, typisch 1 bis 3 µL.</p>
+            </div>
+            <div class="process-card">
+              <svg viewBox="0 0 180 120" aria-label="Platte entwickeln">
+                <rect x="28" y="16" width="124" height="92" rx="4" fill="#eaf2f6" stroke="#8fa5b5" stroke-width="2"/>
+                <rect x="42" y="84" width="96" height="13" fill="#c8e8ef"/>
+                <rect x="68" y="24" width="46" height="76" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/>
+                <line x1="73" y1="84" x2="109" y2="84" stroke="#52606d" stroke-dasharray="5 4" stroke-width="2"/>
+                <path d="M91 79 v-34" stroke="#2f7d55" stroke-width="4"/>
+                <path d="M91 45 l-7 10 m7-10 l7 10" stroke="#2f7d55" stroke-width="4" fill="none"/>
+              </svg>
+              <strong>4. Entwickeln</strong>
+              <p>Kammer geschlossen halten. Das Laufmittel steigt nach oben.</p>
+            </div>
+            <div class="process-card">
+              <svg viewBox="0 0 180 120" aria-label="Laufmittelfront markieren">
+                <rect x="58" y="12" width="64" height="96" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/>
+                <line x1="66" y1="35" x2="114" y2="35" stroke="#1f6f9f" stroke-width="3"/>
+                <line x1="66" y1="85" x2="114" y2="85" stroke="#52606d" stroke-dasharray="5 4" stroke-width="2"/>
+                <circle cx="83" cy="61" r="5" fill="#6f5aa8"/>
+                <circle cx="101" cy="49" r="5" fill="#2f7d55"/>
+                <path d="M128 34 l22 -10" stroke="#1e2933" stroke-width="3"/>
+                <polygon points="150,24 140,24 145,32" fill="#1e2933"/>
+              </svg>
+              <strong>5. Front markieren</strong>
+              <p>Sofort nach dem Herausnehmen markieren, dann trocknen und detektieren.</p>
+            </div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h3>Gute Startzone</h3>
+            <ul class="list">
+              <li>Durchmesser höchstens etwa 3 mm</li>
+              <li>typisch 1 bis 3 µL Lösung</li>
+              <li>Abstand zum Rand und zu anderen Punkten etwa 1,5 cm</li>
+              <li>Vergleichsproben und Analysenproben sinnvoll nebeneinander auftragen</li>
+              <li>Startlinie oberhalb der Laufmitteloberfläche</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Worauf du achten musst</h3>
+            <ul class="list">
+              <li>Startflecken vor dem Entwickeln trocknen lassen</li>
+              <li>Kammer während der Entwicklung nicht öffnen</li>
+              <li>typische Trennstrecke: etwa 6 bis 16 cm</li>
+              <li>Laufmittelfront direkt nach dem Herausnehmen markieren</li>
+              <li>erst nach dem Trocknen detektieren und auswerten</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>Ablauf sortieren</h3>
+          <p>Klicke die Arbeitsschritte in sinnvoller Reihenfolge an.</p>
+          <div id="orderBank" class="dropzone">
+            <button class="chip" data-order="3">Probe auftragen</button>
+            <button class="chip" data-order="1">Kammer vorbereiten</button>
+            <button class="chip" data-order="5">Laufmittelfront markieren</button>
+            <button class="chip" data-order="2">Startlinie zeichnen</button>
+            <button class="chip" data-order="4">Platte entwickeln</button>
+          </div>
+          <div id="orderDrop" class="dropzone">Deine Reihenfolge</div>
+          <button class="btn good" id="checkOrder">Prüfen</button>
+          <div id="orderFeedback" class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 5</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 5 von 11</span><span class="badge">Laufmittelwahl</span></div>
+        <h2>Wie beeinflusst das Laufmittel die Trennung?</h2>
+        <p class="lead">Die Elutionskraft beschreibt, wie gut ein Laufmittel Analyten von der stationären Phase verdrängt. Bei Kieselgel erhöhen polarere Laufmittel oft die Rf-Werte polarer Stoffe.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>Drei Regeln</h3>
+            <ul class="list">
+              <li>Je polarer das Laufmittel, desto weiter wandern polare Substanzen.</li>
+              <li>Bei polarer stationärer Phase wandert die weniger polare Substanz schneller.</li>
+              <li>Ein starkes Laufmittel verdrängt Analyten gut von der stationären Phase.</li>
+            </ul>
+            <p style="margin-top:12px">Außerdem müssen die Lösemittel mischbar sein, wenn ein Laufmittelgemisch eingesetzt wird. Bei Gemischen wie Hexan : Essigsäureethylester verändert der Anteil des polareren Bestandteils die Elutionskraft.</p>
+          </div>
+          <div class="card">
+            <h3>Mini-Simulation</h3>
+            <label>Laufmittelpolarität
+              <input id="polarity" type="range" min="0" max="100" value="35">
+            </label>
+            <div class="plate-wrap" style="margin-top:12px; min-height:300px">
+              <svg viewBox="0 0 300 350" aria-label="Simulierte Laufmittelwirkung">
+                <rect x="58" y="25" width="184" height="285" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/>
+                <line x1="78" y1="268" x2="222" y2="268" stroke="#52606d" stroke-dasharray="6 5" stroke-width="2"/>
+                <line x1="78" y1="55" x2="222" y2="55" stroke="#1f6f9f" stroke-width="3"/>
+                <ellipse id="simPolar" cx="110" cy="210" rx="11" ry="11" fill="#6f5aa8"/>
+                <ellipse id="simMiddle" cx="150" cy="170" rx="11" ry="11" fill="#e2a03f"/>
+                <ellipse id="simUnpolar" cx="190" cy="130" rx="11" ry="11" fill="#2f7d55"/>
+                <text x="82" y="292" font-size="13">polar</text>
+                <text x="135" y="292" font-size="13">mittel</text>
+                <text x="180" y="292" font-size="13">unpolar</text>
+              </svg>
+            </div>
+            <div id="polarityText" class="result"></div>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>Laufmittel anpassen</h3>
+          <p>Auf Kieselgel bleiben zwei polare Substanzen fast am Start und trennen sich schlecht. Was ist der sinnvollste erste Versuch?</p>
+          <button class="btn choice" data-answer="ok">Den Anteil des polareren Lösemittels im Laufmittelgemisch erhöhen.</button>
+          <button class="btn choice" data-answer="no">Die Startlinie unter die Laufmitteloberfläche setzen.</button>
+          <button class="btn choice" data-answer="no">Mehr Probe auftragen, damit die Flecken größer werden.</button>
+          <div class="feedback"></div>
+        </div>
+        <div class="card task">
+          <h3>Polaritär ordnen</h3>
+          <p>Welche Reihenfolge ist von unpolar nach polar richtig?</p>
+          <button class="btn choice" data-answer="ok">Hexan → n-Butanol → Ethanol → Wasser</button>
+          <button class="btn choice" data-answer="no">Wasser → Ethanol → n-Butanol → Hexan</button>
+          <button class="btn choice" data-answer="no">Ethanol → Hexan → Wasser → n-Butanol</button>
+          <div class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 6</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 6 von 11</span><span class="badge">Rf-Wert</span></div>
+        <h2>Wie berechnet man den Rf-Wert?</h2>
+        <p class="lead">Der Rf-Wert ist ein Verhältnis. Er vergleicht die Laufstrecke eines Flecks mit der Laufstrecke der Laufmittelfront.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>Formel</h3>
+            <p class="note">Rf = Laufstrecke der Substanz / Laufstrecke der Laufmittelfront</p>
+            <p>Beispiel: Substanz 4,8 cm, Laufmittelfront 7,5 cm. Dann gilt: 4,8 / 7,5 = 0,64.</p>
+            <p>Rf-Werte liegen zwischen 0 und 1. Je größer der Wert, desto weiter ist der Stoff gewandert.</p>
+          </div>
+          <div class="card image-card">
+            <h3>Strecken im Chromatogramm</h3>
+            <img src="assets/rf-wert-schema.png" alt="Schema zur Berechnung des Rf-Werts mit Substanzstrecke und Laufmittelfront">
+            <p style="margin-top:12px">Im Schema ist <strong>a</strong> die Laufstrecke der Substanz. <strong>b</strong> ist die Laufstrecke der Laufmittelfront. Damit gilt: Rf = a / b.</p>
+          </div>
+          <div class="card">
+            <h3>Rf-Rechner</h3>
+            <div class="mini-row">
+              <label>Substanzstrecke in cm
+                <input id="spotDistance" type="number" min="0" step="0.1" value="4.8">
+              </label>
+              <label>Laufmittelfront in cm
+                <input id="frontDistance" type="number" min="0.1" step="0.1" value="7.5">
+              </label>
+            </div>
+            <div id="rfOut" class="result">Rf = 0,64</div>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>Rechnen</h3>
+          <p>Ein Fleck läuft 3,2 cm. Die Laufmittelfront läuft 8,0 cm. Welcher Rf-Wert ist richtig?</p>
+          <button class="btn choice" data-answer="no">2,50</button>
+          <button class="btn choice" data-answer="ok">0,40</button>
+          <button class="btn choice" data-answer="no">0,25</button>
+          <div class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 7</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 7 von 11</span><span class="badge">Detektion</span></div>
+        <h2>Wie macht man farblose Stoffe sichtbar?</h2>
+        <p class="lead">Nicht alle Stoffe sind von selbst farbig. Deshalb braucht man UV-Licht oder Nachweisreagenzien.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>Detektionsarten</h3>
+            <ul class="list">
+              <li>Eigenfarbe oder Form des Flecks</li>
+              <li>UV-Licht bei Platten mit Fluoreszenzindikator F254</li>
+              <li>Begasen, Besprühen oder Tauchen mit Nachweisreagenzien</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Reagenz auswählen</h3>
+            <label>Stoffklasse
+              <select id="detectSelect">
+                <option value="Universell: Iod, Kaliumpermanganat oder Schwefelsäure.">universell</option>
+                <option value="Amine und Aminosäuren: Ninhydrin.">Amine / Aminosäuren</option>
+                <option value="Lipide: Ammoniummolybdat-Phosphat-Reagenz.">Lipide</option>
+                <option value="Phenole: Eisen(III)-chlorid.">Phenole</option>
+                <option value="Aldehyde und Ketone: 2,4-Dinitrophenylhydrazin.">Aldehyde / Ketone</option>
+                <option value="Vitamin C: Tillmans-Reagenz.">Vitamin C</option>
+              </select>
+            </label>
+            <div id="detectOut" class="result">Universell: Iod, Kaliumpermanganat oder Schwefelsäure.</div>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>Nachweis wählen</h3>
+          <p>Welches Reagenz ist typisch für Aminosäuren?</p>
+          <button class="btn choice" data-answer="ok">Ninhydrin</button>
+          <button class="btn choice" data-answer="no">Eisen(III)-chlorid</button>
+          <button class="btn choice" data-answer="no">Tillmans-Reagenz</button>
+          <div class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 8</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 8 von 11</span><span class="badge">Auswertung</span></div>
+        <h2>Wie deutet man ein Chromatogramm?</h2>
+        <p class="lead">Man vergleicht Fleckenhöhe, Anzahl der Flecken und Referenzspuren. Gleiche Höhe bedeutet unter gleichen Bedingungen: wahrscheinlich gleiche Substanz.</p>
+        <div class="grid">
+          <div class="plate-wrap">
+            <svg viewBox="0 0 340 360" aria-label="Reaktionskontrolle">
+              <rect x="52" y="28" width="236" height="290" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/>
+              <line x1="72" y1="280" x2="268" y2="280" stroke="#52606d" stroke-dasharray="6 5" stroke-width="2"/>
+              <line x1="72" y1="60" x2="268" y2="60" stroke="#1f6f9f" stroke-width="3"/>
+              <circle cx="92" cy="205" r="9" fill="#e2a03f"/>
+              <circle cx="142" cy="145" r="9" fill="#e2a03f"/>
+              <circle cx="192" cy="205" r="9" fill="#6f5aa8"/>
+              <circle cx="192" cy="145" r="9" fill="#6f5aa8"/>
+              <circle cx="192" cy="168" r="9" fill="#6f5aa8"/>
+              <circle cx="242" cy="168" r="9" fill="#2f7d55"/>
+              <text x="86" y="307" font-size="14">A</text>
+              <text x="136" y="307" font-size="14">B</text>
+              <text x="186" y="307" font-size="14">C</text>
+              <text x="236" y="307" font-size="14">D</text>
+            </svg>
+          </div>
+          <div class="card">
+            <h3>Spuren lesen</h3>
+            <ul class="list">
+              <li>A und B sind Edukte.</li>
+              <li>C ist das Reaktionsgemisch.</li>
+              <li>D ist die Produktreferenz.</li>
+              <li>Flecken in C auf Höhe von A/B bedeuten: Edukte sind noch vorhanden.</li>
+              <li>Ein Fleck in C auf Höhe von D bedeutet: Produkt ist entstanden.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>Fall beurteilen</h3>
+          <p>Was zeigt das Chromatogramm?</p>
+          <button class="btn choice" data-answer="no">Die Reaktion ist beendet und das Produkt ist rein.</button>
+          <button class="btn choice" data-answer="ok">Produkt ist entstanden, aber Edukte und weitere Bestandteile sind noch vorhanden.</button>
+          <button class="btn choice" data-answer="no">Es ist kein Produkt entstanden.</button>
+          <div class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 9</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 9 von 11</span><span class="badge">Störungen</span></div>
+        <h2>Welche Fehlerbilder gibt es?</h2>
+        <p class="lead">Schlechte Chromatogramme haben oft erkennbare Ursachen. Wer das Fehlerbild benennt, kann die nächste DC gezielt verbessern.</p>
+        <div class="card">
+          <h3>Fehlerdiagnose-Fallkarten</h3>
+          <p>Wähle eine Fallkarte aus. Bestimme dann Ursache und passende Verbesserung.</p>
+          <div class="fault-trainer">
+            <div class="case-list" id="faultCaseList"></div>
+            <div>
+              <div class="fault-visual" id="faultVisual"></div>
+              <p id="faultCaseText" class="note">Wähle links eine Fallkarte.</p>
+              <div class="mini-row" style="margin-top:12px">
+                <label>Wahrscheinliche Ursache
+                  <select id="faultCause"></select>
+                </label>
+                <label>Passende Verbesserung
+                  <select id="faultFix"></select>
+                </label>
+              </div>
+              <button class="btn good" id="checkFaultCase" style="margin-top:10px">Diagnose prüfen</button>
+              <div id="faultCaseFeedback" class="feedback"></div>
+            </div>
+          </div>
+          <details class="solution" style="margin-top:14px">
+            <summary>Diagnose-Tabelle als Hilfe anzeigen</summary>
+            <div>
+              <table class="table">
+                <thead><tr><th>Beobachtung</th><th>Mögliche Ursache</th><th>Verbesserung</th></tr></thead>
+                <tbody>
+                  <tr><td>Tailing</td><td>zu hohe Substanzmenge oder falsche Elutionskraft</td><td>weniger auftragen, Laufmittel anpassen</td></tr>
+                  <tr><td>schräge Front</td><td>Platte stand nicht gerade</td><td>Platte senkrecht einsetzen</td></tr>
+                  <tr><td>unregelmäßige Front</td><td>keine Kammersättigung oder Temperaturunterschiede</td><td>Kammer sättigen, Bedingungen konstant halten</td></tr>
+                  <tr><td>Probe am Start verschmiert</td><td>Startlinie im Laufmittel, Startzone zu groß oder nass</td><td>höher starten, trocknen lassen, kleiner auftragen</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 10</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 10 von 11</span><span class="badge">HPTLC</span></div>
+        <h2>Was unterscheidet HPTLC von konventioneller DC?</h2>
+        <p class="lead">HPTLC bedeutet Hochleistungsdünnschichtchromatographie. Das Verfahren ist enger kontrolliert, leistungsfähiger und oft stärker automatisiert als die klassische DC.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>Schicht und Trennleistung</h3>
+            <ul class="list">
+              <li>homogenere und dünnere Schichtdicke</li>
+              <li>kleinere Korngröße</li>
+              <li>sehr enge Korngrößenverteilung</li>
+              <li>hohe Packungsdichte</li>
+              <li>dadurch hohe Trennleistung und geringere Trennstrecke</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Kammer und Laufmittel</h3>
+            <ul class="list">
+              <li>häufig HPTLC-Kammer mit horizontaler Entwicklung</li>
+              <li>geringere Laufmittelmenge nötig</li>
+              <li>definiertere Bedingungen verbessern die Reproduzierbarkeit</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Aufwand und Auftragung</h3>
+            <ul class="list">
+              <li>aufwändigere Produktion der Platten</li>
+              <li>dadurch teurer als konventionelle DC</li>
+              <li>meist automatisierte Auftragung</li>
+              <li>meist bandenförmiges Aufsprühen</li>
+              <li>geringere Auftragsmenge</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Merksatz</h3>
+            <p class="note">HPTLC ist keine völlig andere Grundidee, sondern eine präzisere und leistungsfähigere Variante der DC.</p>
+          </div>
+        </div>
+        <div class="card task">
+          <h3>HPTLC einordnen</h3>
+          <p>Welche Aussage beschreibt HPTLC richtig?</p>
+          <button class="btn choice" data-answer="no">HPTLC benötigt größere Auftragsmengen und längere Trennstrecken.</button>
+          <button class="btn choice" data-answer="ok">HPTLC nutzt dünnere, homogenere Schichten und kleinere Korngrößen für höhere Trennleistung.</button>
+          <button class="btn choice" data-answer="no">HPTLC verzichtet auf eine stationäre Phase.</button>
+          <div class="feedback"></div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn primary next">Weiter zu Schritt 11</button></div>
+      </section>
+
+      <section class="step">
+        <div class="topline"><span class="badge">Schritt 11 von 11</span><span class="badge">Abschluss</span></div>
+        <h2>Abschlussprüfung</h2>
+        <p class="lead">Zum Schluss prüfst du, ob die wichtigsten Kompetenzen sitzen. Danach kannst du das Material ausdrucken oder einzelne Schritte wiederholen.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>Kompetenz-Check</h3>
+            <label class="checkline"><input type="checkbox" class="selfCheck"><span>Ich kann mobile und stationäre Phase erklären.</span></label>
+            <label class="checkline"><input type="checkbox" class="selfCheck"><span>Ich kann den Einfluss der Polarität bei Kieselgel beschreiben.</span></label>
+            <label class="checkline"><input type="checkbox" class="selfCheck"><span>Ich kann eine DC korrekt durchführen.</span></label>
+            <label class="checkline"><input type="checkbox" class="selfCheck"><span>Ich kann Rf-Werte berechnen und deuten.</span></label>
+            <label class="checkline"><input type="checkbox" class="selfCheck"><span>Ich kann typische Fehlerbilder erkennen.</span></label>
+            <div id="selfCheckOut" class="result">0 von 5 Kompetenzen markiert.</div>
+          </div>
+          <div class="card">
+            <h3>Merksätze</h3>
+            <div class="summary-box">
+              <p><strong>1.</strong> DC trennt Stoffe durch unterschiedliche Verteilung zwischen stationärer und mobiler Phase.</p>
+              <p><strong>2.</strong> Auf Kieselgel werden polare Stoffe stärker zurückgehalten.</p>
+              <p><strong>3.</strong> Der Rf-Wert ist ein Verhältniswert und nur bei gleichen Bedingungen sinnvoll vergleichbar.</p>
+              <p><strong>4.</strong> Saubere Startzonen und konstante Bedingungen entscheiden über die Qualität.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card exam-card">
+          <h3>Übungsaufgaben</h3>
+          <p class="lead">Bearbeite die Aufgaben zuerst selbst. Öffne die Lösung erst danach zur Kontrolle.</p>
+
+          <div class="card">
+            <h3>Erkennung farbloser Substanzen</h3>
+            <p>Nennen Sie zwei Möglichkeiten der Erkennung von farblosen Substanzen auf der DC-Platte.</p>
+            <textarea class="answer-box" placeholder="Eigene Antwort notieren..."></textarea>
+            <details class="solution">
+              <summary>Lösung anzeigen</summary>
+              <div>Zum Beispiel: UV-Licht auf DC-Platten mit Fluoreszenzindikator F254; Nachweisreagenzien durch Begasen, Besprühen oder Tauchen. Je nach Stoffklasse eignen sich z. B. Iod, KMnO4, Ninhydrin, Eisen(III)-chlorid oder 2,4-Dinitrophenylhydrazin.</div>
+            </details>
+          </div>
+
+          <div class="card">
+            <h3>Positionen, Strecken und Rf-Wert</h3>
+            <div class="exam-layout">
+              <img class="exam-image" src="assets/abschluss-rf-schema.png" alt="Skizziertes Dünnschichtchromatogramm mit Position 1, Position 2 und Strecken a, b, c">
+              <div>
+                <p>a) Benennen Sie die Position 1 und 2 sowie die Strecken a, b und c.</p>
+                <p>b) Geben Sie exemplarisch den Rf-Wert der Substanz A an.</p>
+                <textarea class="answer-box" placeholder="Eigene Antwort notieren..."></textarea>
+              </div>
+            </div>
+            <details class="solution">
+              <summary>Lösung anzeigen</summary>
+              <div>Position 1: Startlinie. Position 2: Auftragspunkt bzw. Startpunkt der Probe. Strecke a: Laufhöhe der Komponente A. Strecke b: Laufhöhe der Komponente B. Strecke c: Laufhöhe des Fließmittels bzw. der Laufmittelfront. Für A gilt exemplarisch: Rf(A) = a / c.</div>
+            </details>
+          </div>
+
+          <div class="card">
+            <h3>Polarität und Rf-Werte bestimmen</h3>
+            <div class="exam-layout">
+              <img class="exam-image" src="assets/abschluss-abc-rf.png" alt="Chromatogramm mit Substanzen A, B und C auf polarer stationärer Phase">
+              <div>
+                <p>Auf einer DC-Platte mit polarer stationärer Phase werden drei Substanzen A, B und C chromatographiert. Als Laufmittel wird ein Gemisch aus Hexan und Essigsäureethylester verwendet.</p>
+                <p>a) Welcher der Stoffe A bis C ist der polarste?</p>
+                <p>b) Bestimmen Sie aus dem Chromatogramm die Rf-Werte der Substanzen.</p>
+                <textarea class="answer-box" placeholder="Eigene Antwort notieren..."></textarea>
+              </div>
+            </div>
+            <details class="solution">
+              <summary>Lösung anzeigen</summary>
+              <div>Bei polarer stationärer Phase wird der polarste Stoff am stärksten zurückgehalten und wandert am wenigsten weit. Im Bild ist B am wenigsten weit gelaufen, also ist B der polarste Stoff. Aus dem Chromatogramm ergeben sich näherungsweise: A ca. 0,73; B ca. 0,32; C ca. 0,56. Kleine Abweichungen sind je nach Ablesung möglich.</div>
+            </details>
+          </div>
+
+          <div class="card">
+            <h3>Trennung verbessern und Begriffe erklären</h3>
+            <div class="exam-layout">
+              <img class="exam-image" src="assets/abschluss-trennung-optimieren.png" alt="Chromatogramm mit schlecht getrennter Probe auf Kieselgel">
+              <div>
+                <p>Sie erhalten nach einer DC-Trennung auf einer Kieselgelplatte mit dem Fließmittelgemisch Hexan : Ethansäureethylester = 8 : 2 das dargestellte Chromatogramm.</p>
+                <p>a) Erklären Sie, wie das Fließmittelgemisch verändert werden muss, um eine bessere Trennung zu erreichen.</p>
+                <p>b) Erläutern Sie die Begriffe „inneres Chromatogramm“ und „äußeres Chromatogramm“.</p>
+                <p>c) Nennen Sie zwei Gründe, warum Rf-Werte oft schlecht reproduzierbar sind.</p>
+                <textarea class="answer-box" placeholder="Eigene Antwort notieren..."></textarea>
+              </div>
+            </div>
+            <details class="solution">
+              <summary>Lösung anzeigen</summary>
+              <div>Das Fließmittelgemisch muss polarer werden: Der Anteil an Ethansäureethylester wird erhöht. Dadurch entstehen größere Rf-Werte und die Trennung wird besser. Inneres Chromatogramm: Die Substanzflecken bleiben auf der Platte fixiert; der Anwender unterbricht den chromatografischen Prozess, die Analyten befinden sich zu diesem Zeitpunkt noch im chromatografischen System. Äußeres Chromatogramm: Das Ergebnis der Analyse wird erst ausgewertet, wenn die Analyten das chromatografische System verlassen haben; die Analyten legen in unterschiedlichen Zeiten die gleiche Wegstrecke zurück. Gründe für schlecht reproduzierbare Rf-Werte sind z. B. Veränderungen in der Fließmittelzusammensetzung, schlechte Kammersättigung, variable Auftragsmenge oder wenn das Lösemittel der Probe nach dem Probenauftrag nicht abgefönt bzw. nicht vollständig entfernt wurde.</div>
+            </details>
+          </div>
+
+          <div class="card">
+            <h3>Reaktionsverlauf beurteilen</h3>
+            <div class="exam-layout">
+              <img class="exam-image" src="assets/abschluss-reaktionskontrolle.png" alt="DC-Chromatogramm zur Reaktionskontrolle mit Spuren A, B, C und D">
+              <div>
+                <p>Mithilfe der DC soll der Verlauf einer chemischen Reaktion überwacht werden. A: Edukt A; B: Edukt B; C: Reaktionsgemisch bzw. Rohprodukt; D: Referenz des gekauften Produkts.</p>
+                <p>a) Erläutern Sie, ob die Reaktion zum Zeitpunkt der Probenahme bereits beendet war.</p>
+                <p>b) Beurteilen Sie die Reinheit des Rohprodukts.</p>
+                <p>c) Berechnen Sie den Rf-Wert des reinen Produkts.</p>
+                <textarea class="answer-box" placeholder="Eigene Antwort notieren..."></textarea>
+              </div>
+            </div>
+            <details class="solution">
+              <summary>Lösung anzeigen</summary>
+              <div>Es liegt zwar noch Edukt A im Reaktionsgemisch vor, jedoch kein Edukt B mehr für eine Weiterreaktion. Die Reaktion war daher bereits beendet. Das Rohprodukt enthält neben dem eigentlich erwünschten Produkt noch zwei Verunreinigungen: Edukt A und ein Nebenprodukt. Für das reine Produkt gilt: Rf = Substanzfleckhöhe / Laufmittelhöhe = (7 - 1,5) cm / (9 - 1,5) cm = 0,73.</div>
+            </details>
+          </div>
+        </div>
+        <div class="buttons"><button class="btn prev">Zurück</button><button class="btn" onclick="window.print()">Drucken</button><button class="btn primary" id="restart">Neu starten</button></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const steps = [...document.querySelectorAll(".step")];
+    const tabs = [...document.querySelectorAll(".step-tab")];
+    const done = new Set([0]);
+    let current = 0;
+
+    function showStep(index) {
+      current = Math.max(0, Math.min(steps.length - 1, index));
+      done.add(current);
+      steps.forEach((step, i) => step.classList.toggle("active", i === current));
+      tabs.forEach((tab, i) => {
+        tab.classList.toggle("active", i === current);
+        tab.classList.toggle("done", done.has(i));
+      });
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function updateProgress() {
+      const selfChecks = [...document.querySelectorAll(".selfCheck")];
+      const checked = selfChecks.filter(box => box.checked).length;
+      const base = done.size / steps.length;
+      const bonus = selfChecks.length ? checked / selfChecks.length * 0.08 : 0;
+      const value = Math.min(100, Math.round((base + bonus) * 100));
+      document.getElementById("progressText").textContent = value + " %";
+      document.getElementById("progressBar").style.width = value + "%";
+      document.getElementById("selfCheckOut").textContent = `${checked} von ${selfChecks.length || 5} Kompetenzen markiert.`;
+    }
+
+    tabs.forEach(tab => tab.addEventListener("click", () => showStep(Number(tab.dataset.step))));
+    document.querySelectorAll(".next").forEach(button => button.addEventListener("click", () => showStep(current + 1)));
+    document.querySelectorAll(".prev").forEach(button => button.addEventListener("click", () => showStep(current - 1)));
+    document.getElementById("restart").addEventListener("click", () => {
+      done.clear();
+      done.add(0);
+      showStep(0);
+    });
+
+    document.querySelectorAll(".choice").forEach(button => {
+      button.addEventListener("click", () => {
+        const box = button.closest(".task") || button.closest(".card");
+        const feedback = box.querySelector(".feedback");
+        box.querySelectorAll(".choice").forEach(item => item.classList.remove("correct", "wrong"));
+        if (button.dataset.answer === "ok") {
+          button.classList.add("correct");
+          feedback.textContent = "Richtig. Du kannst zum nächsten Schritt gehen.";
+          done.add(current);
+        } else {
+          button.classList.add("wrong");
+          feedback.textContent = "Noch nicht. Lies den Schritt noch einmal und vergleiche die Aussagen.";
+        }
+        updateProgress();
+      });
+    });
+
+    const prosCons = [
+      ["pro", "leichte Handhabung"],
+      ["pro", "geringer apparativer und zeitlicher Aufwand"],
+      ["pro", "meist einfache Probenvorbereitung"],
+      ["pro", "geringer Lösemittelverbrauch und niedrige Kosten"],
+      ["pro", "gleichzeitige Trennung mehrerer Proben"],
+      ["pro", "keine Kontamination der stationären Phase, da Einmalartikel"],
+      ["pro", "selektive Nachweise und empfindliche Nachweisgrenzen"],
+      ["con", "weniger für quantitative Auswertung geeignet"],
+      ["con", "relativ geringe Trennleistung bei komplexen Gemischen"],
+      ["con", "nicht automatisierbar"],
+      ["con", "Fließgeschwindigkeit ist nicht konstant"],
+      ["con", "keine großen Stoffmengen verwendbar"]
+    ];
+
+    function renderProsCons() {
+      const bank = document.getElementById("prosConsBank");
+      if (!bank) return;
+      bank.innerHTML = "";
+      prosCons
+        .map(item => ({ item, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .forEach(({ item }) => {
+          const chip = document.createElement("button");
+          chip.className = "btn sort-chip";
+          chip.dataset.kind = item[0];
+          chip.textContent = item[1];
+          chip.addEventListener("click", () => cycleSortChip(chip));
+          bank.appendChild(chip);
+        });
+    }
+
+    function cycleSortChip(chip) {
+      const bank = document.getElementById("prosConsBank");
+      const pro = document.querySelector('[data-zone="pro"]');
+      const con = document.querySelector('[data-zone="con"]');
+      chip.classList.remove("good", "bad");
+      if (chip.parentElement === bank) pro.appendChild(chip);
+      else if (chip.parentElement === pro) con.appendChild(chip);
+      else bank.appendChild(chip);
+    }
+
+    document.getElementById("checkProsCons").addEventListener("click", () => {
+      const targets = [...document.querySelectorAll(".sort-target")];
+      const chips = [...document.querySelectorAll(".sort-chip")];
+      const placed = chips.filter(chip => chip.closest(".sort-target"));
+      const feedback = document.getElementById("prosConsFeedback");
+      if (placed.length !== chips.length) {
+        feedback.textContent = "Ordne zuerst alle Aussagen einem Feld zu. Tipp: Durch erneutes Klicken wandert eine Karte weiter.";
+        return;
+      }
+      let correct = 0;
+      targets.forEach(target => {
+        target.querySelectorAll(".sort-chip").forEach(chip => {
+          const ok = chip.dataset.kind === target.dataset.zone;
+          chip.classList.toggle("good", ok);
+          chip.classList.toggle("bad", !ok);
+          if (ok) correct += 1;
+        });
+      });
+      feedback.textContent = `${correct} von ${chips.length} richtig zugeordnet.`;
+      if (correct === chips.length) done.add(current);
+      updateProgress();
+    });
+
+    const labelOptions = [
+      "Papier zur Kammersättigung",
+      "Deckel",
+      "Trägerplatte",
+      "Trennschicht auf Träger",
+      "DC-Kammer",
+      "Startlinie",
+      "Substanzflecken",
+      "Fließmittel / Laufmittel"
+    ];
+
+    let activeLabel = "";
+
+    function renderLabelSelects() {
+      const bank = document.getElementById("labelBank");
+      if (!bank) return;
+      bank.innerHTML = "";
+      labelOptions.forEach(label => {
+        const button = document.createElement("button");
+        button.className = "label-chip";
+        button.textContent = label;
+        button.dataset.label = label;
+        button.addEventListener("click", () => {
+          activeLabel = label;
+          document.querySelectorAll(".label-chip").forEach(chip => chip.classList.toggle("active", chip === button));
+          document.getElementById("labelFeedback").textContent = `Ausgewählt: ${label}. Klicke jetzt eine Position an.`;
+        });
+        bank.appendChild(button);
+      });
+      document.querySelectorAll(".label-drop").forEach(drop => {
+        drop.addEventListener("click", () => {
+          if (!activeLabel) {
+            document.getElementById("labelFeedback").textContent = "Wähle zuerst eine Begriffskarte aus.";
+            return;
+          }
+          drop.textContent = activeLabel;
+          drop.dataset.chosen = activeLabel;
+          drop.classList.add("filled");
+          drop.classList.remove("good", "bad");
+          updateLabelChipUse();
+        });
+      });
+    }
+
+    function updateLabelChipUse() {
+      const chosen = [...document.querySelectorAll(".label-drop")].map(drop => drop.dataset.chosen).filter(Boolean);
+      document.querySelectorAll(".label-chip").forEach(chip => chip.classList.toggle("used", chosen.includes(chip.dataset.label)));
+    }
+
+    document.getElementById("resetLabels").addEventListener("click", () => {
+      activeLabel = "";
+      document.querySelectorAll(".label-chip").forEach(chip => chip.classList.remove("active", "used"));
+      document.querySelectorAll(".label-drop").forEach(drop => {
+        drop.textContent = "Begriff einsetzen";
+        delete drop.dataset.chosen;
+        drop.classList.remove("filled", "good", "bad");
+      });
+      document.getElementById("labelFeedback").textContent = "Beschriftung zurückgesetzt.";
+    });
+
+    document.getElementById("checkLabels").addEventListener("click", () => {
+      const drops = [...document.querySelectorAll("#labelGrid .label-drop")];
+      let correct = 0;
+      drops.forEach(drop => {
+        const ok = drop.dataset.chosen === drop.dataset.label;
+        drop.classList.toggle("good", ok);
+        drop.classList.toggle("bad", !ok);
+        if (ok) correct += 1;
+      });
+      document.getElementById("labelFeedback").textContent = `${correct} von ${drops.length} Beschriftungen richtig.`;
+      if (correct === drops.length) done.add(current);
+      updateProgress();
+    });
+
+    document.querySelectorAll(".flash-card").forEach(card => {
+      card.addEventListener("click", () => {
+        card.classList.toggle("open");
+        done.add(current);
+        updateProgress();
+      });
+    });
+
+    const orderBank = document.getElementById("orderBank");
+    const orderDrop = document.getElementById("orderDrop");
+    document.querySelectorAll("#orderBank .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        if (chip.parentElement === orderBank) {
+          if (orderDrop.textContent.trim() === "Deine Reihenfolge") orderDrop.textContent = "";
+          orderDrop.appendChild(chip);
+        } else {
+          orderBank.appendChild(chip);
+        }
+      });
+    });
+    document.getElementById("checkOrder").addEventListener("click", () => {
+      const order = [...orderDrop.querySelectorAll(".chip")].map(chip => Number(chip.dataset.order));
+      const out = document.getElementById("orderFeedback");
+      if (order.length !== 5) {
+        out.textContent = "Klicke alle fünf Schritte in deine Reihenfolge.";
+        return;
+      }
+      const ok = order.every((value, index) => value === index + 1);
+      out.textContent = ok
+        ? "Richtig: vorbereiten, Startlinie, auftragen, entwickeln, Front markieren."
+        : "Noch nicht. Überlege, was vor dem Auftragen und was direkt nach der Entwicklung passieren muss.";
+      if (ok) done.add(current);
+      updateProgress();
+    });
+
+    const faultCases = [
+      {
+        title: "Schräge Front",
+        text: "Die Laufmittelfront ist deutlich schräg.",
+        cause: "Platte stand nicht gerade",
+        fix: "Platte gerade einsetzen",
+        feedback: "Richtig: Eine schräge Front entsteht häufig, wenn die DC-Platte nicht gerade in der Kammer steht.",
+        visual: `<svg viewBox="0 0 240 230" aria-label="Schräge Laufmittelfront"><rect x="70" y="25" width="100" height="180" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/><line x1="82" y1="164" x2="158" y2="164" stroke="#52606d" stroke-dasharray="6 5" stroke-width="2"/><line x1="82" y1="72" x2="158" y2="52" stroke="#1f6f9f" stroke-width="4"/><circle cx="106" cy="122" r="7" fill="#6f5aa8"/><circle cx="136" cy="110" r="7" fill="#2f7d55"/></svg>`
+      },
+      {
+        title: "Tailing",
+        text: "Die Flecken ziehen lange Schwänze nach unten.",
+        cause: "zu hohe Substanzmenge oder falsche Elutionskraft",
+        fix: "weniger auftragen oder Laufmittel anpassen",
+        feedback: "Richtig: Tailing entsteht oft durch Überladung oder eine ungeeignete Elutionskraft.",
+        visual: `<svg viewBox="0 0 240 230" aria-label="Tailing"><rect x="70" y="25" width="100" height="180" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/><line x1="82" y1="164" x2="158" y2="164" stroke="#52606d" stroke-dasharray="6 5" stroke-width="2"/><line x1="82" y1="52" x2="158" y2="52" stroke="#1f6f9f" stroke-width="3"/><ellipse cx="115" cy="100" rx="10" ry="14" fill="#6f5aa8"/><path d="M115 112 C111 130 112 145 109 158" stroke="#6f5aa8" stroke-width="7" stroke-linecap="round" opacity=".7"/><ellipse cx="140" cy="82" rx="10" ry="13" fill="#2f7d55"/><path d="M140 93 C136 112 138 133 135 150" stroke="#2f7d55" stroke-width="7" stroke-linecap="round" opacity=".7"/></svg>`
+      },
+      {
+        title: "Unregelmäßige Front",
+        text: "Die Laufmittelfront ist wellig und läuft ungleichmäßig.",
+        cause: "keine Kammersättigung oder Temperaturunterschiede",
+        fix: "Kammer sättigen und Bedingungen konstant halten",
+        feedback: "Richtig: Eine unregelmäßige Front passt zu fehlender Kammersättigung oder wechselnden Bedingungen.",
+        visual: `<svg viewBox="0 0 240 230" aria-label="Unregelmäßige Laufmittelfront"><rect x="70" y="25" width="100" height="180" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/><line x1="82" y1="164" x2="158" y2="164" stroke="#52606d" stroke-dasharray="6 5" stroke-width="2"/><path d="M82 60 C96 50 106 70 120 60 C134 50 144 70 158 60" fill="none" stroke="#1f6f9f" stroke-width="4"/><circle cx="104" cy="122" r="7" fill="#6f5aa8"/><circle cx="138" cy="118" r="7" fill="#2f7d55"/></svg>`
+      },
+      {
+        title: "Probe verschmiert am Start",
+        text: "Die Probe bleibt unten breit und undefiniert.",
+        cause: "Startlinie im Laufmittel, Startzone zu groß oder nass",
+        fix: "höher starten, trocknen lassen, kleiner auftragen",
+        feedback: "Richtig: Eine zu tiefe oder nasse Startzone wird leicht extrahiert oder verschmiert.",
+        visual: `<svg viewBox="0 0 240 230" aria-label="Verschmierte Probe am Start"><rect x="70" y="25" width="100" height="180" fill="#fffdf2" stroke="#c8c0a8" stroke-width="2"/><line x1="82" y1="164" x2="158" y2="164" stroke="#52606d" stroke-dasharray="6 5" stroke-width="2"/><line x1="82" y1="52" x2="158" y2="52" stroke="#1f6f9f" stroke-width="3"/><ellipse cx="112" cy="164" rx="20" ry="8" fill="#6f5aa8" opacity=".85"/><ellipse cx="137" cy="164" rx="18" ry="8" fill="#2f7d55" opacity=".75"/></svg>`
+      }
+    ];
+    const faultCauses = [...new Set(faultCases.map(item => item.cause))];
+    const faultFixes = [...new Set(faultCases.map(item => item.fix))];
+    let activeFaultCase = 0;
+
+    function renderFaultTrainer() {
+      const list = document.getElementById("faultCaseList");
+      const causeSelect = document.getElementById("faultCause");
+      const fixSelect = document.getElementById("faultFix");
+      if (!list || !causeSelect || !fixSelect) return;
+      list.innerHTML = "";
+      faultCases.forEach((item, index) => {
+        const button = document.createElement("button");
+        button.className = "btn case-btn";
+        button.textContent = item.title;
+        button.addEventListener("click", () => showFaultCase(index));
+        list.appendChild(button);
+      });
+      causeSelect.innerHTML = '<option value="">Bitte auswählen</option>' + faultCauses.map(value => `<option value="${value}">${value}</option>`).join("");
+      fixSelect.innerHTML = '<option value="">Bitte auswählen</option>' + faultFixes.map(value => `<option value="${value}">${value}</option>`).join("");
+      showFaultCase(0);
+    }
+
+    function showFaultCase(index) {
+      activeFaultCase = index;
+      const item = faultCases[index];
+      document.querySelectorAll("#faultCaseList .case-btn").forEach((button, i) => button.classList.toggle("active", i === index));
+      document.getElementById("faultVisual").innerHTML = item.visual;
+      document.getElementById("faultCaseText").textContent = item.text;
+      document.getElementById("faultCause").value = "";
+      document.getElementById("faultFix").value = "";
+      document.getElementById("faultCaseFeedback").textContent = "";
+    }
+
+    document.getElementById("checkFaultCase").addEventListener("click", () => {
+      const item = faultCases[activeFaultCase];
+      const causeOk = document.getElementById("faultCause").value === item.cause;
+      const fixOk = document.getElementById("faultFix").value === item.fix;
+      const feedback = document.getElementById("faultCaseFeedback");
+      if (causeOk && fixOk) {
+        feedback.textContent = item.feedback;
+        done.add(current);
+      } else if (causeOk) {
+        feedback.textContent = "Die Ursache stimmt. Prüfe noch die passende Verbesserung.";
+      } else if (fixOk) {
+        feedback.textContent = "Die Verbesserung passt. Prüfe noch die Ursache.";
+      } else {
+        feedback.textContent = "Noch nicht. Nutze bei Bedarf die Diagnose-Tabelle unter den Fallkarten als Hilfe.";
+      }
+      updateProgress();
+    });
+
+    function updatePolarity() {
+      const value = Number(document.getElementById("polarity").value);
+      const start = 268;
+      const front = 55;
+      const height = start - front;
+      const rfs = [
+        Math.min(.88, .15 + value * .005),
+        Math.min(.9, .32 + value * .0042),
+        Math.min(.92, .50 + value * .003)
+      ];
+      const ids = ["simPolar", "simMiddle", "simUnpolar"];
+      ids.forEach((id, i) => {
+        document.getElementById(id).setAttribute("cy", String((start - rfs[i] * height).toFixed(1)));
+      });
+      document.getElementById("polarityText").textContent =
+        `Bei dieser Einstellung liegen die ungefähren Rf-Werte bei ${rfs.map(v => v.toFixed(2).replace(".", ",")).join(", ")}. Ein stärkeres Laufmittel verschiebt die Flecken nach oben.`;
+    }
+    document.getElementById("polarity").addEventListener("input", updatePolarity);
+
+    function updateRf() {
+      const spot = Number(document.getElementById("spotDistance").value);
+      const front = Number(document.getElementById("frontDistance").value);
+      const out = document.getElementById("rfOut");
+      if (!front || front <= 0 || spot < 0 || spot > front) {
+        out.textContent = "Eingabe prüfen: Die Substanzstrecke darf nicht größer als die Laufmittelfront sein.";
+        return;
+      }
+      out.textContent = "Rf = " + (spot / front).toFixed(2).replace(".", ",");
+    }
+    document.getElementById("spotDistance").addEventListener("input", updateRf);
+    document.getElementById("frontDistance").addEventListener("input", updateRf);
+
+    document.getElementById("detectSelect").addEventListener("change", event => {
+      document.getElementById("detectOut").textContent = event.target.value;
+    });
+
+    document.querySelectorAll(".selfCheck").forEach(box => box.addEventListener("change", updateProgress));
+
+    renderProsCons();
+    renderLabelSelects();
+    renderFaultTrainer();
+    updatePolarity();
+    updateRf();
+    updateProgress();
+  </script>
+</body>
+</html>
